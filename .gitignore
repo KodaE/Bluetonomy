@@ -1,0 +1,8 @@
+Blueprint_Lab_Software/.idea/
+Blueprint_Lab_Software/venv/
+*.pyc
+
+Blueprint_Lab_Software/docsrc/build/
+
+*.vscode/
+*venv/
