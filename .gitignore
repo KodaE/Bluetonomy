@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 Blueprint_Lab_Software/.idea/
 Blueprint_Lab_Software/venv/
 *.pyc
 
 Blueprint_Lab_Software/docsrc/build/
 
+=======
+*.pyc
+>>>>>>> 2b8a435f865d03a81098f770c71396f7351a7539
 *.vscode/
 *venv/
