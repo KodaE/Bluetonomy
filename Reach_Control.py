@@ -14,7 +14,9 @@ class Reach_Control_Class:
     
 
     def send_joint_angles(self, joint_angles): #defines method send_joint_angles. Takes joint_angles parameter
-        packets = b''   #initialises empty bytes object. Used to accumulat encoded packets to be sent to the arm.
+        if len(joint_angles) != 6:
+            raise ValueError("Exactly 6 joint angles ar required.") #Ensures only 6 parameters were received and read.
+        packets = b''   #initialises empty bytes object. Used to accumulate encoded packets to be sent to the arm.
         for index, position in enumerate(joint_angles): #starts a for loop to iterate through joint angles from joint_angles list
             device_id = index + 1 
             packets +- BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position])) 
