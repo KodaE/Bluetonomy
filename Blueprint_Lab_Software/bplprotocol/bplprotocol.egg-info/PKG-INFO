@@ -2,6 +2,8 @@ Metadata-Version: 2.1
 Name: bplprotocol
 Version: 0.1.dev0
 License-File: LICENSE.txt
+Requires-Dist: cobs
+Requires-Dist: crcmod
 
 # BPL Protocol
 
