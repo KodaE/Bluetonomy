@@ -13,8 +13,8 @@ import serial
 #Class to be implemented
 #input desired coordinates into 'Destination' Variable
 
-serial_port_name = "COM3"
-serial_port = serial.Serial(serial_port_name, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+#serial_port_name = "COM3"
+#serial_port = serial.Serial(serial_port_name, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
 desired_positions = [0.0, 0.0, 0.0, 1.5707, 0.0] # A = grabber open/close (Link 4) B = Link 3 C = Link 2 B = Link 1 C = Link 0 
 ThetaA = atan(145.3/40)
 Link0 = DHLink(d= 0.0462, a= 0.020, alpha= pi/2, qlim= [radians(0),radians(350)]) # Base Link
@@ -37,11 +37,18 @@ Actual = ReachAlpha5.fkine(q1)
 Distance = norm(Desired - Actual.t)
 print('Desired Fkine = ', Desired, 'Actual Fkine = ', Actual.t)
 print('Distance between = ', Distance)
-
-# Desired position from end effector to base A -> G
+# Desired position from end effector to base A -> E
 desired_positions = [degrees(q1[4]), q1[3], q1[2],q1[1],q1[0]]
-packets = b''
-for index, position in enumerate(desired_positions):
-    device_id = index + 1
-    packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-    serial_port.write(packets)
+#packets = b''
+#for index, position in enumerate(desired_positions):
+    #device_id = index + 1
+    #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+    #serial_port.write(packets)
+outer_limits = pow((ReachAlpha5.a[1]+sqrt(ReachAlpha5.d[3]*ReachAlpha5.d[3]+ReachAlpha5.a[2]*ReachAlpha5.a[2])),2)
+define = np.array([[0, 0, 0],[0,1,0],[0,1,2]])
+print(define[1])
+if pow(sqrt(pow(define[0],2)+pow(define[1],2))- ReachAlpha5.a[0],2)+pow(define[2]-ReachAlpha5.d[0],2) <= pow(ReachAlpha5.a[1]+sqrt(pow(ReachAlpha5.d[3],2)+pow(ReachAlpha5.a[2],2)),2) and pow(sqrt(pow(define[0],2)+ pow(define[1],2)) - ReachAlpha5.a[0],2)+pow(define[2]-ReachAlpha5.d[0],2) >= (pow(39.94 + ReachAlpha5.a[2],2)+pow(145.3+ReachAlpha5.d[3],2)):
+    print('Winner')
+
+else:
+    print('loser')
