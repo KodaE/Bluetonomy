@@ -28,7 +28,7 @@ class Reach_Control_Class:
 
 
 # Runs code if Reach_Control.py is run directly
-if __name__ == "__main__":
+if __name__ == '__main__':
     ReachComObj = Reach_Control_Class()
     desired_positions = [10.0, 0.0, 0.0, 1.5707, 0.0]
     ReachComObj.send_joint_angles(desired_positions)

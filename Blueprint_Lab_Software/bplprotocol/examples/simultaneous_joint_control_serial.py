@@ -13,7 +13,9 @@ if __name__ == '__main__':
 
     # Desired position from end effector to base A -> G
     #desired_positions = [10.0, 0.5, 1.5707, 1.5707, 1.5707, 2.8, 3.1415]
-    desired_positions = [10.0, 0.0, 0.0, 1.5707, 0.0]
+    q0 = ((350/180.0)*3.14)
+    print(q0)
+    desired_positions = [10.0, 0.0, 0.0, 1.5707,0]
 
 
    # desired_positions = [0,0,0,0,0,0,0]
