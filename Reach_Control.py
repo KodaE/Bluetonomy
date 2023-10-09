@@ -1,10 +1,6 @@
-from bplprotocol import BPLProtocol, PacketID
-import time #used for time-related operations
-import serial #provides functionality for serial communication
-
-# TASK 1:
-# Create function in Reach_Control_Class,
-# 6 parameters (joint angles) & sends joint angle data (packet) to robot arm.
+from bplprotocol import BPLProtocol, PacketID, PacketReader
+import time 
+import serial 
 
 class Reach_Control_Class:
     """This function is used control the arms, enter the following input desired positions,
@@ -24,7 +20,7 @@ class Reach_Control_Class:
             self.packets += BPLProtocol.encode_packet(self.device_id[n], PacketID.POSITION, BPLProtocol.encode_floats([position]))
             n += 1
         self.serial_port.write(self.packets)
-        print(self.packets)
+        
 
 
     def base_id_feedback_data(self):
