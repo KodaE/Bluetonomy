@@ -20,7 +20,7 @@ class Reach_Control_Class:
             self.packets += BPLProtocol.encode_packet(self.device_id[n], PacketID.POSITION, BPLProtocol.encode_floats([position]))
             n += 1
         self.serial_port.write(self.packets)
-        print(self.packets)
+       
 
 
     def base_id_feedback_data(self):
