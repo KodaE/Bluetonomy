@@ -56,13 +56,13 @@ class Kinematics:
                 T1 = transl(self.coordinates[self.index])
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
-                #fig = plt.figure(1)
-                #fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=fig)
-                #ax = plt.gca()
+                fig = plt.figure(1)
+                fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=fig)
+                ax = plt.gca()
                 for self.q in self.trajectory:
                     self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
                     self.ReachAlpha5.q = self.q
-                    #fig.step(0.05)
+                    fig.step(0.05)
                     print(self.q)
                     
                     packets = b''
@@ -72,12 +72,12 @@ class Kinematics:
                         self.serial_port.write(packets)
                     
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(3)
+
                 self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
                 for self.q in self.trajectoryback:
                     self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
                     self.ReachAlpha5.q = self.q
-                    #fig.step(0.05)
+                    fig.step(0.05)
                     
                     packets = b''
                     for index, position in enumerate(self.desired_position):
@@ -86,7 +86,6 @@ class Kinematics:
                         self.serial_port.write(packets)
                     
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(3)
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 continue
