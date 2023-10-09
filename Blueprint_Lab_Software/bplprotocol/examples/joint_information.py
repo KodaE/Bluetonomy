@@ -11,18 +11,22 @@ if __name__ == '__main__':
     packet_reader = PacketReader()
 
     #serial_port_name = "COM10"
-    serial_port_name = "/dev/ttyUSB0"
+    serial_port_name = "COM4"
     request_timeout = 0.5  # Seconds
 
     serial_port = serial.Serial(serial_port_name, baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0)
 
     # Requesting Information
-    device_id = 0x01  # Jaws
+    #device_id = 0x01 # Jaws
+    device_ids = [0x01, 0x02, 0x03, 0x04, 0x05]  # All
 
-    print(f"Requesting Position from Device {device_id}")
+    #print(f"Requesting Position from Device {device_ids}")
+    for device_id in device_ids:
+        print(f"Requesting Position from Device {device_id}")
+        serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.POSITION])))
 
     # Request POSITION from the jaws
-    serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.POSITION])))
+    serial_port.write(BPLProtocol.encode_packet(device_ids, PacketID.REQUEST, bytes([PacketID.POSITION])))
 
     start_time = time.time()
 
@@ -37,12 +41,12 @@ if __name__ == '__main__':
             packets = packet_reader.receive_bytes(read_data)
             if packets:
                 for packet in packets:
-                    read_device_id, read_packet_id, data_bytes = packet
-                    if read_device_id == device_id and read_packet_id == PacketID.POSITION:
+                    read_device_ids, read_packet_id, data_bytes = packet
+                    if read_device_ids == device_ids and read_packet_id == PacketID.POSITION:
 
                         # Decode floats, because position is reported in floats
                         position = BPLProtocol.decode_floats(data_bytes)[0]
-                        print(f"Position from Device {device_id} is {position}")
+                        print(f"Position from Device {device_ids} is {position}")
 
                 if position is not None:
                     break
@@ -54,9 +58,9 @@ if __name__ == '__main__':
 
     time.sleep(3)
 
-    print(f"Requesting Software Version from Device {device_id}")
+    print(f"Requesting Software Version from Device {device_ids}")
     # Request the Software version from the jaws
-    serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.SOFTWARE_VERSION])))
+    serial_port.write(BPLProtocol.encode_packet(device_ids, PacketID.REQUEST, bytes([PacketID.SOFTWARE_VERSION])))
     software_version = None
     start_time = time.time()
     while True:
@@ -69,12 +73,12 @@ if __name__ == '__main__':
             packets = packet_reader.receive_bytes(read_data)
             if packets:
                 for packet in packets:
-                    read_device_id, read_packet_id, data_bytes = packet
-                    if read_device_id == device_id and read_packet_id == PacketID.SOFTWARE_VERSION:
+                    read_device_ids, read_packet_id, data_bytes = packet
+                    if read_device_ids == device_ids and read_packet_id == PacketID.SOFTWARE_VERSION:
 
                         # software version is reported as a list of integers
                         software_version = list(data_bytes)
-                        print(f"Software version from Device: {device_id} is {tuple(software_version)}")
+                        print(f"Software version from Device: {device_ids} is {tuple(software_version)}")
                 if software_version is not None:
                     break
 
@@ -86,9 +90,9 @@ if __name__ == '__main__':
     # Requesting multiple packets at once. Position and Velocity. Packets will responding individually from the device
     time.sleep(3)
 
-    print(f"Requesting Position and Velocity from Device {device_id}")
+    print(f"Requesting Position and Velocity from Device {device_ids}")
 
-    serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.VELOCITY, PacketID.POSITION])))
+    serial_port.write(BPLProtocol.encode_packet(device_ids, PacketID.REQUEST, bytes([PacketID.VELOCITY, PacketID.POSITION])))
 
     start_time = time.time()
     position = None
@@ -103,8 +107,8 @@ if __name__ == '__main__':
             packets = packet_reader.receive_bytes(read_data)
             if packets:
                 for packet in packets:
-                    read_device_id, read_packet_id, data_bytes = packet
-                    if read_device_id == device_id and read_packet_id in [PacketID.VELOCITY, PacketID.POSITION]:
+                    read_device_ids, read_packet_id, data_bytes = packet
+                    if read_device_ids == device_ids and read_packet_id in [PacketID.VELOCITY, PacketID.POSITION]:
                         if read_packet_id == PacketID.POSITION:
                             position = BPLProtocol.decode_floats(data_bytes)[0]
                         elif read_packet_id == PacketID.VELOCITY:
@@ -119,5 +123,5 @@ if __name__ == '__main__':
             break
 
     if position is not None and velocity is not None:
-        print(f"Received Position {position} and Velocity {velocity} from device {device_id}")
+        print(f"Received Position {position} and Velocity {velocity} from device {device_ids}")
 

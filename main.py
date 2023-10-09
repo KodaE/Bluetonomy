@@ -1,10 +1,19 @@
-import Reach_Control
+from Reach_Kinematics import Kinematics
+import random
+import time
 
-RA5_control = Reach_Control.Reach_Control_Class(serial_port_name="COM6")
+RA_km = Kinematics(COMPORT="COM6")
+
+while True:
+    x = random.uniform(0, 0.3)
+    y = random.uniform(0, 0.3)
+    z = random.uniform(0, 0.3)
+    co = [[x,y,z]]
+    print(co)
+    RA_km.CalculateandMove(coordinates=co)
+    
+    
 
 
 
-base_id = RA5_control.base_id_feedback_data()
-
-print(base_id)
 
