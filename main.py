@@ -2,7 +2,7 @@ from Reach_Kinematics import Kinematics
 import random
 
 
-RA_km = Kinematics(COMPORT="COM4")
+RA_km = Kinematics(COMPORT="COM6")
 while True:
 
     x = random.uniform(0, 0.3)
