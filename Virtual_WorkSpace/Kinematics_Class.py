@@ -42,7 +42,7 @@ class Kinematics:
     
     def CalculateandMove(self):
         self.steps = 100
-        for self.index in range(len(self.coordinates)):
+        for self.index in range(len(self.coordinates)): #set the coordinates for each one inputted (Come back later to allow inputs to be determined )
             self.x = self.coordinates[self.index,0]
             self.y = self.coordinates[self.index,1]
             self.z = self.coordinates[self.index,2]
