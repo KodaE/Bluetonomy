@@ -1,0 +1,38 @@
+#Local package for Reach Alpha 5 Communication
+-e ./Blueprint_Lab_Software/bplprotocol/.
+
+#General packages
+pyserial>=3.5
+numpy>=1.25.2
+
+#GUI packages
+customtkinter>=5.2.0
+matplotlib>=3.7.3
+
+#KM Packages
+ansitable==0.9.7
+cobs==1.2.0
+colored==2.2.3
+contourpy==1.1.1
+crcmod==1.7
+cycler==0.11.0
+fonttools==4.42.1
+kiwisolver==1.4.5
+matplotlib==3.8.0
+numpy==1.26.0
+packaging==23.1
+pgraph-python==0.6.2
+Pillow==10.0.1
+progress==1.6
+pyparsing==3.1.1
+pyserial==3.5
+python-dateutil==2.8.2
+roboticstoolbox-python==1.1.0
+rtb-data==1.0.1
+scipy==1.11.2
+six==1.16.0
+spatialgeometry==1.1.0
+spatialmath-python==1.1.8
+swift-sim==1.1.0
+typing_extensions==4.8.0
+websockets==11.0.3
