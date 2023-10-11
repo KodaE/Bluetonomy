@@ -53,6 +53,7 @@ class Kinematics:
             self.inner_lower_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0] + 0.1453,2) >= pow(-self.ReachAlpha5.d[3],2)
             if self.outer_limits and self.inner_limits and self.inner_lower_limits :
                 print('Reachable Position: ', self.coordinates[self.index])
+                self.flag = True
                 T1 = transl(self.coordinates[self.index])
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
@@ -87,11 +88,15 @@ class Kinematics:
                     
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
                 time.sleep(3)
+                
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
-                continue
+                self.flag = False
+                
 
 if __name__ == '__main__':
     
     Coordinates = [-0.019, -0.138, 0.213]
-    Kinematics(Coordinates=Coordinates, COMPORT='COM4')
+    Kin = Kinematics(Coordinates=Coordinates, COMPORT='COM4')
+    print(Kin.flag)
+
