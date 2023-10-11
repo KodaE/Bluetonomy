@@ -20,10 +20,11 @@ import serial
 
 class Kinematics:
 
-    def __init__(self, Coordinates, COMPORT):
+    def __init__(self, Coordinates, COMPORT, data_queue):
         self.comport = COMPORT
         #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.coordinates = np.array(Coordinates)
+        self.data_queue = data_queue
         self.ModelRobot()
         self.CalculateandMove()
         

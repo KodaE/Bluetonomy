@@ -1,11 +1,3 @@
-import math
-from math import *
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import linalg
-from spatialmath.base import *
-from roboticstoolbox import DHLink, DHRobot, jtraj
-import math
 from math import *
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,13 +8,14 @@ import roboticstoolbox as rtb
 from bplprotocol import BPLProtocol, PacketID
 import time
 import serial
-
-
+import threading
+import queue
 class Kinematics:
 
-    def __init__(self, COMPORT):
+    def __init__(self, COMPORT, data_queue):
         self.comport = COMPORT
         self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        self.data_queue = data_queue
         self.ModelRobot()
         
         
@@ -31,7 +24,7 @@ class Kinematics:
     def ModelRobot(self):
         self.ThetaA = atan(145.3/40)
         Link0 = DHLink(d= 0.0462, a= 0.020, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
-        Link1 = DHLink(d= 0, a= 0.15071, alpha= pi, qlim= [1.5707,radians(200)],offset=-self.ThetaA) 
+        Link1 = DHLink(d= 0, a= 0.15071, alpha= pi, qlim= [radians(90),radians(200)],offset=-self.ThetaA) 
         Link2 = DHLink(d= 0, a= 0.020, alpha= -pi/2, qlim= [radians(0),radians(200)],offset=-self.ThetaA)
         Link3 = DHLink(d= -0.180, a= 0, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi/2)
         Link4 = DHLink(d= 0, a= 0, alpha= 0, qlim= [radians(0), radians(90)],offset=-pi/2) # Grabber
@@ -54,6 +47,7 @@ class Kinematics:
             if self.outer_limits and self.inner_limits and self.inner_lower_limits :
                 print('Reachable Position: ', self.coordinates[self.index])
                 self.flag = True
+                self.data_queue.put(self.flag)
                 T1 = transl(self.coordinates[self.index])
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
@@ -92,11 +86,11 @@ class Kinematics:
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 self.flag = False
-                
+                self.data_queue.put(self.flag)
 
 if __name__ == '__main__':
-    
+    data_queue = queue.Queue()
     Coordinates = [-0.019, -0.138, 0.213]
-    Kin = Kinematics(Coordinates=Coordinates, COMPORT='COM4')
+    Kin = Kinematics(COMPORT='COM4',data_queue=data_queue)
     print(Kin.flag)
 
