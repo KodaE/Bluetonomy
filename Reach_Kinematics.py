@@ -16,7 +16,7 @@ import roboticstoolbox as rtb
 from bplprotocol import BPLProtocol, PacketID, PacketReader
 import time
 import serial
-
+import keyboard
 
 class Kinematics:
 
@@ -28,6 +28,7 @@ class Kinematics:
         self.reachable = True
         self.ra5_base_id = 0x05
         self.request_timeout =  2
+        self.stop_flag = False
         self.ModelRobot()
         
 
@@ -78,23 +79,24 @@ class Kinematics:
                 self.mode_status()
             
                 # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(4)
-                self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
-                for self.q in self.trajectoryback:
-                    self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
-                    self.ReachAlpha5.q = self.q
-                    #fig.step(0.05)
-                    
-                    packets = b''
-                    for index, position in enumerate(self.desired_position):
-                        device_id = index + 1
-                        packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                        self.serial_port.write(packets)
-                    
-                # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(6)
-                self.reachable = True
-                return self.reachable
+                time.sleep(2)
+                if self.stop_flag == False:
+                    self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
+                    for self.q in self.trajectoryback:
+                        self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
+                        self.ReachAlpha5.q = self.q
+                        #fig.step(0.05)
+                        
+                        packets = b''
+                        for index, position in enumerate(self.desired_position):
+                            device_id = index + 1
+                            packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                            self.serial_port.write(packets)
+                        
+                    # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                    time.sleep(6)
+                    self.reachable = True
+                    return self.reachable
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 self.reachable = False
@@ -225,6 +227,18 @@ class Kinematics:
             self.packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([0x01]))
         self.serial_port.write(self.packets)
 
+    def stop_arm_movement(self):
+        for device_id in self.device_id:
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.VELOCITY, BPLProtocol.encode_floats([0]))
+        self.serial_port.write(self.packets)
+
+
+    # def e_stop(self):
+    #     print(keyboard.is_pressed)
+    #     if keyboard.is_pressed("a"):
+    #         self.stop_arm_movement()
+    #         self.send_disable_comms()
+            
 
 if __name__ == '__main__':
     

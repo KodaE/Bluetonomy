@@ -1,13 +1,19 @@
 from Reach_Kinematics import Kinematics
 import random
 import time 
+import keyboard
+import threading
+
+HOME = [0.0, 0.0, 0.0, 1.5207, 0.0]
 
 RA_km = Kinematics(COMPORT="COM6")
+# RA_km.move_arm_to_pos(HOME)
+
+timeout = time.time() + 5
 
 
-timeout_1_min = time.time() + 60
-timeout_3_min = time.time() + 60 * 1
-timeout_5_min = time.time() + 60 * 5
+e_stop_event = threading.Event()
+
 
 def generate_valid_coord():
     x = random.uniform(0, 0.3)
@@ -16,68 +22,37 @@ def generate_valid_coord():
     co = [[x,y,z]]
     return co
 
-def generate_invalid_coord():
-    x = random.uniform(1.0, 2.0)
-    y = random.uniform(1.0, 2.0)
-    z = random.uniform(1.0, 2.0)
-    co = [[x,y,z]]
-    return co
-
-chance_100 = 1
-chance_75 = 0.75
-chance_50 = 0.5
-
-no_valid_coord = 0
-no_invalid_coord = 0
-
-no_arm_move = 0
-no_invalid_coord_detect = 0
-
-# 100 % valid input test
-
-while True:
-
-    if random.random() <= chance_100:
-        co = generate_valid_coord
-        no_valid_coord += 1
-
+def run_function():
+    while not e_stop_event.is_set():
+        co = generate_valid_coord()
+        print(RA_km.stop_flag)
         RA_km.CalculateandMove(coordinates=co)
-        no_arm_move +=1
-
-    else:
-        no_invalid_coord += 1
-        if  RA_km.CalculateandMove(coordinates=co) == True:
-            no_invalid_coord_detect -= 1
+        print("\n")
 
 
-    if time.time() > timeout_5_min:
+def e_stop():
+    while True:
+        # time.sleep(1)
+        print("e-stop running")
+        if keyboard.is_pressed("a"):
+            RA_km.send_disable_comms()
+            RA_km.stop_arm_movement()
+            e_stop_event.set()
+            RA_km.stop_flag = True
+            break
 
-        print("Data For 5 Minute")
-        print(f"no_valid_coord = {no_valid_coord}")
-        print(f"no_invalid_coord = {no_invalid_coord}")
-      
-        print(f"no_arm_move = {no_arm_move}")
-        print(f"no_invalid_coord_detect = {no_invalid_coord_detect}\n")
 
-        break
+t1 = threading.Thread(target=e_stop)
+t2 = threading.Thread(target=run_function)
 
-    elif time.time() > timeout_3_min:
-        
-        print("Data For 3 Minute")
-        print(f"no_valid_coord = {no_valid_coord}")
-        print(f"no_invalid_coord = {no_invalid_coord}")
-      
-        print(f"no_arm_move = {no_arm_move}")
-        print(f"no_invalid_coord_detect = {no_invalid_coord_detect}\n")
+t1.start()
+t2.start()
+t1.join()
+t2.join()
 
-    elif time.time() > timeout_1_min:
 
-        print("Data For 1 Minute")
-        print(f"no_valid_coord = {no_valid_coord}")
-        print(f"no_invalid_coord = {no_invalid_coord}")
-      
-        print(f"no_arm_move = {no_arm_move}")
-        print(f"no_invalid_coord_detect = {no_invalid_coord_detect}\n")
+
+
 
 
 
