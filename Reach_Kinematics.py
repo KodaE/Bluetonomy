@@ -191,7 +191,6 @@ class Kinematics:
 
     def mode_status(self): 
         request_timeout = 1
-        
         for device_id in self.device_id:
             packet_reader = PacketReader()
             mode = None
@@ -221,7 +220,11 @@ class Kinematics:
                     print("Request for mode timed out")
                     break      
 
- 
+    def send_disable_comms(self):
+        for device_id in self.device_id:
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([0x01]))
+        self.serial_port.write(self.packets)
+
 
 if __name__ == '__main__':
     
