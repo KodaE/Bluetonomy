@@ -13,7 +13,7 @@ from scipy import linalg
 from spatialmath.base import *
 from roboticstoolbox import DHLink, DHRobot, jtraj
 import roboticstoolbox as rtb
-from bplprotocol import BPLProtocol, PacketID
+from bplprotocol import BPLProtocol, PacketID, PacketReader
 import time
 import serial
 
@@ -23,10 +23,12 @@ class Kinematics:
     def __init__(self, COMPORT):
         self.comport = COMPORT
         self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        self.packets =b''
+        self.device_id = [0x01, 0x02, 0x03, 0x04, 0x05]
         self.reachable = True
-        # self.ModelRobot()
-        
-        
+        self.ra5_base_id = 0x05
+        self.request_timeout =  2
+        self.ModelRobot()
         
 
     def ModelRobot(self):
@@ -39,7 +41,7 @@ class Kinematics:
         self.ReachAlpha5 = DHRobot([Link0 , Link1, Link2, Link3, Link4])
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
         self.Origin = self.ReachAlpha5.q 
-        print(self.ReachAlpha5.fkine(self.Origin))
+        # print(self.ReachAlpha5.fkine(self.Origin))
     
     def CalculateandMove(self,coordinates):
         self.steps = 50
@@ -64,16 +66,19 @@ class Kinematics:
                     self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
                     self.ReachAlpha5.q = self.q
                     #fig.step(0.05)
-                    print(self.q)
+                    # print(self.q)
                     
                     packets = b''
                     for index, position in enumerate(self.desired_position):
                         device_id = index + 1
                         packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
                         self.serial_port.write(packets)
-                    
-                print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(3)
+
+                time.sleep(2)
+                self.mode_status()
+            
+                # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                time.sleep(4)
                 self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
                 for self.q in self.trajectoryback:
                     self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
@@ -86,14 +91,137 @@ class Kinematics:
                         packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
                         self.serial_port.write(packets)
                     
-                print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(3)
+                # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                time.sleep(6)
                 self.reachable = True
                 return self.reachable
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 self.reachable = False
                 return self.reachable
+            
+   
+
+    def move_arm_to_pos(self, desired_positions):
+        n = 0
+        for position in desired_positions:
+            self.packets += BPLProtocol.encode_packet(self.device_id[n], PacketID.POSITION, BPLProtocol.encode_floats([position]))
+            n += 1
+        self.serial_port.write(self.packets)
+        
+
+    def base_id_feedback_data(self):
+        packet_reader = PacketReader()
+        self.serial_port.write(BPLProtocol.encode_packet(self.ra5_base_id, PacketID.REQUEST, bytes([PacketID.KM_END_POS, PacketID.VOLTAGE, PacketID.TEMPERATURE])))
+        start_time = time.time()
+        position = None
+        voltage = None
+        temp = None
+        d = dict()
+        while True:
+            time.sleep(0.0001)
+            try:
+                read_data = self.serial_port.read()
+            except BaseException:
+                read_data = b''
+            if read_data != b'':
+                packets = packet_reader.receive_bytes(read_data)
+                if packets:
+                    for packet in packets:
+                        read_device_id, read_packet_id, data_bytes = packet
+                        if read_device_id == self.ra5_base_id and read_packet_id in [PacketID.KM_END_POS, PacketID.VOLTAGE, PacketID.TEMPERATURE]:
+                            if read_packet_id == PacketID.KM_END_POS:
+                                position = np.array(BPLProtocol.decode_floats(data_bytes)[:3])
+                            elif read_packet_id == PacketID.VOLTAGE:
+                                voltage = BPLProtocol.decode_floats(data_bytes)
+                            elif read_packet_id == PacketID.TEMPERATURE:
+                                temp = BPLProtocol.decode_floats(data_bytes)
+
+
+                    if position is not None and voltage is not None and temp is not None:
+                        break
+
+            # Timeout if no response is seen from the device.
+            if time.time() - start_time > self.request_timeout:
+                print("Request for Position and Velocity Timed out")
+                break
+
+        if position is not None and voltage is not None and temp is not None:
+            d["end-effector-pos"] = position
+            d["voltage"] = voltage
+            d["temp"] = temp
+            return d
+        
+    
+    def joint_id_feedback_data(self):
+        request_timeout = 1
+        d = dict()
+          
+        for device_id in self.device_id:
+          
+            position = None
+            packet_reader = PacketReader()  
+            self.serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.POSITION]))) 
+            start_time = time.time()
+            while True:
+                time.sleep(0.0001)
+                try:
+                    read_data = self.serial_port.read()
+                except BaseException:
+                    read_data = b''
+                if read_data != b'':
+                    packets = packet_reader.receive_bytes(read_data)
+                    if packets:
+                        for packet in packets:
+                            read_device_id, read_packet_id, data_bytes = packet
+                            if read_device_id == device_id and read_packet_id == PacketID.POSITION:
+                                # Decode floats, because position is reported in floats
+                                position = BPLProtocol.decode_floats(data_bytes)
+                                d[device_id] = position
+                                                          
+                        if position is not None:
+                            break
+
+                # Timeout if no response is seen from the device.
+                if time.time() - start_time > request_timeout:
+                    print("Request for Position timed out")
+                    break
+                
+        return d           
+
+    def mode_status(self): 
+        request_timeout = 1
+        
+        for device_id in self.device_id:
+            packet_reader = PacketReader()
+            mode = None
+            self.serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.MODE])))
+            start_time = time.time()
+            while True:
+                time.sleep(0.0001)
+                try:
+                    read_data = self.serial_port.read()
+                except BaseException:
+                    read_data = b''
+                if read_data != b'':
+                    packets = packet_reader.receive_bytes(read_data)
+                    if packets:
+                        for packet in packets:
+                            read_device_ids, read_packet_id, data_bytes = packet
+                            if read_device_ids == device_id and read_packet_id == PacketID.MODE:
+
+                                # Decode floats, because position is reported in floats
+                                mode = data_bytes
+                                print(f"Mode from {device_id}  is {mode}")
+
+                        if mode is not None:
+                            break
+
+                if time.time() - start_time > request_timeout:
+                    print("Request for mode timed out")
+                    break      
+
+ 
 
 if __name__ == '__main__':
     
