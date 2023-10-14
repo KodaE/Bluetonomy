@@ -8,19 +8,14 @@ import roboticstoolbox as rtb
 from bplprotocol import BPLProtocol, PacketID
 import time
 import serial
-import threading
-import queue
+
 class Kinematics:
 
-    def __init__(self, COMPORT, data_queue):
+    def __init__(self, COMPORT):
         self.comport = COMPORT
-        self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
-        self.data_queue = data_queue
+        #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.ModelRobot()
         
-        
-        
-
     def ModelRobot(self):
         self.ThetaA = atan(145.3/40)
         Link0 = DHLink(d= 0.0462, a= 0.020, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
@@ -32,6 +27,35 @@ class Kinematics:
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
         self.Origin = self.ReachAlpha5.q 
         print(self.ReachAlpha5.fkine(self.Origin))
+
+    def twothreadsrunning(self):
+        statement = True
+        while statement:
+            stime = time.time()
+            print(stime)
+            time.sleep(5)
+
+    def InputCoordinates(self):
+        coordinates = []
+        num_points = int(input("Enter the number of Co-ordinates: "))
+
+        for i in range(num_points):
+            x = float(input(f"Enter the x-coordinate for point {i + 1}: "))
+            print(x)
+            
+            y = float(input(f"Enter the y-coordinate for point {i + 1}: "))
+            z = float(input(f"Enter the z-coordinate for point {i + 1}: "))
+            coordinates.append([x, y, z])
+            print(coordinates)
+       
+        return coordinates
+    
+    def Run(self):
+        flag = True
+        while flag:
+            coordinates = self.InputCoordinates()
+            self.CalculateandMove(coordinates=coordinates)
+
     
     def CalculateandMove(self,coordinates):
         self.steps = 50
@@ -47,7 +71,6 @@ class Kinematics:
             if self.outer_limits and self.inner_limits and self.inner_lower_limits :
                 print('Reachable Position: ', self.coordinates[self.index])
                 self.flag = True
-                self.data_queue.put(self.flag)
                 T1 = transl(self.coordinates[self.index])
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
@@ -60,11 +83,11 @@ class Kinematics:
                     #fig.step(0.05)
                     print(self.q)
                     
-                    packets = b''
-                    for index, position in enumerate(self.desired_position):
-                        device_id = index + 1
-                        packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                        self.serial_port.write(packets)
+                    #packets = b''
+                    #for index, position in enumerate(self.desired_position):
+                        #device_id = index + 1
+                        #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                        #self.serial_port.write(packets)
                     
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
                 time.sleep(3)
@@ -74,23 +97,24 @@ class Kinematics:
                     self.ReachAlpha5.q = self.q
                     #fig.step(0.05)
                     
-                    packets = b''
-                    for index, position in enumerate(self.desired_position):
-                        device_id = index + 1
-                        packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                        self.serial_port.write(packets)
+                    #packets = b''
+                    #for index, position in enumerate(self.desired_position):
+                        #device_id = index + 1
+                        #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                        #self.serial_port.write(packets)
                     
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
                 time.sleep(3)
                 
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
-                self.flag = False
-                self.data_queue.put(self.flag)
+                
+                
 
 if __name__ == '__main__':
-    data_queue = queue.Queue()
-    Coordinates = [-0.019, -0.138, 0.213]
-    Kin = Kinematics(COMPORT='COM4',data_queue=data_queue)
-    print(Kin.flag)
+    
+    Coordinates = [[-0.019, -0.138, 0.213]]
+    Kin = Kinematics(COMPORT='COM4')
+    Kin.CalculateandMove(coordinates=Coordinates)
+    
 

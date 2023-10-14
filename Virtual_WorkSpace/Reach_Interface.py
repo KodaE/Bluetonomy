@@ -1,5 +1,5 @@
 from Reach_Control import Reach_Control_Class as rc
-from Reach_Kinematics import Reach_Kinematics_Class as rk
+import Reach_Kinematics as rk
 from Reach_Estop import Reach_Estop_Class as re
 
 class Reach_Int_Class:

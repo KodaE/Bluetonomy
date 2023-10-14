@@ -1,18 +1,17 @@
-from Reach_Kinematics import Kinematics
+from Reach_Kinematics import *
 import random
 import time
+import threading
+import queue
 
-RA_km = Kinematics(COMPORT="COM6")
 
-while True:
-    x = random.uniform(0, 0.3)
-    y = random.uniform(0, 0.3)
-    z = random.uniform(0, 0.3)
-    co = [[x,y,z]]
-    print(co)
-    RA_km.CalculateandMove(coordinates=co)
-    
-    
+Kin = Kinematics(COMPORT='COM4')
+
+MovingRobotThread = threading.Thread(target=Kin.Run)
+runningtime = threading.Thread(target=Kin.twothreadsrunning)
+
+MovingRobotThread.start()
+runningtime.start()
 
 
 
