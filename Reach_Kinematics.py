@@ -116,7 +116,7 @@ class Kinematics:
         packet_reader = PacketReader()
         self.serial_port.write(BPLProtocol.encode_packet(self.ra5_base_id, PacketID.REQUEST, bytes([PacketID.KM_END_POS, PacketID.VOLTAGE, PacketID.TEMPERATURE])))
         start_time = time.time()
-        position = None
+        position = []
         voltage = None
         temp = None
         d = dict()
@@ -191,36 +191,7 @@ class Kinematics:
                 
         return d           
 
-    def mode_status(self): 
-        request_timeout = 1
-        for device_id in self.device_id:
-            packet_reader = PacketReader()
-            mode = None
-            self.serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.MODE])))
-            start_time = time.time()
-            while True:
-                time.sleep(0.0001)
-                try:
-                    read_data = self.serial_port.read()
-                except BaseException:
-                    read_data = b''
-                if read_data != b'':
-                    packets = packet_reader.receive_bytes(read_data)
-                    if packets:
-                        for packet in packets:
-                            read_device_ids, read_packet_id, data_bytes = packet
-                            if read_device_ids == device_id and read_packet_id == PacketID.MODE:
 
-                                # Decode floats, because position is reported in floats
-                                mode = data_bytes
-                                print(f"Mode from {device_id}  is {mode}")
-
-                        if mode is not None:
-                            break
-
-                if time.time() - start_time > request_timeout:
-                    print("Request for mode timed out")
-                    break      
 
     def send_disable_comms(self):
         for device_id in self.device_id:

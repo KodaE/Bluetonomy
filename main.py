@@ -32,7 +32,6 @@ def run_function():
 
 def e_stop():
     while True:
-        # time.sleep(1)
         print("e-stop running")
         if keyboard.is_pressed("a"):
             RA_km.send_disable_comms()
@@ -49,6 +48,8 @@ t1.start()
 t2.start()
 t1.join()
 t2.join()
+
+
 
 
 
