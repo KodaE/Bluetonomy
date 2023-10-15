@@ -18,8 +18,8 @@ EstoppulseThread = threading.Thread(target=Estop.pulse)
 WatchDogThread = threading.Thread(target=WatchDog.run)
 MovingRobotThread.start()
 GuiThread.start()
-#EstoppulseThread.start()
-#WatchDogThread.start()
+EstoppulseThread.start()
+WatchDogThread.start()
 
 
 

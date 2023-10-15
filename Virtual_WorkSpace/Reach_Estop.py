@@ -4,7 +4,7 @@ import threading
 
 class Reach_Estop_Class:
     def __init__(self) -> None:
-        self.time = time.time()
+        self.event = threading.Event()
         self.flag = False
         
     
@@ -16,7 +16,11 @@ class Reach_Estop_Class:
 
     def pulse(self):
         while True:
-            self.time = time.time()
+            self.event.set()
+            self.event.clear()
+            time.sleep(10)
+            
+            
         
 
     def checktorque(self): #Check for the reading of torque during, will need to time it so that when checking for tolerance it isnt using the same path

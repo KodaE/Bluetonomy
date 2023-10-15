@@ -60,13 +60,17 @@ class Reach_Sim_GUI_Class:
         y = self.y_entry.get()
         z = self.z_entry.get()
 
-        if x and y and z:
+        if x.isdigit() and y.isdigit() and z.isdigit():
             self.coordinates.append([float(x), float(y), float(z)])
             self.coordinates_listbox.insert(tk.END, f"({x}, {y}, {z})")
             self.x_entry.delete(0, tk.END)
             self.y_entry.delete(0, tk.END)
             self.z_entry.delete(0, tk.END)
-        
+        else:
+            messagebox.showinfo("INVALID COORDINATES!","Please re-enter coordinates")
+            self.x_entry.delete(0, tk.END)
+            self.y_entry.delete(0, tk.END)
+            self.z_entry.delete(0, tk.END)
 
     def submit_coordinates(self):
         self.placecoordinates = self.coordinates

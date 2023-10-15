@@ -7,7 +7,7 @@ import threading
 class Reach_WatchDog_Class:
 
     def __init__(self,Estop) -> None:
-        self.time = time.time()
+        
         self.estop = Estop
         self.flag = False
         self.i = 0
@@ -17,16 +17,11 @@ class Reach_WatchDog_Class:
             self.isEstopRunning()
 
     def isEstopRunning(self):
-        self.time = time.time()
-        if self.time == self.estop.time:
-            self.flag = True
-            #print("valid")
-            self.i = 0
+        if not self.estop.event.wait(20):
+            print("Not running")
+
         else:
-            self.i += 1
-            if self.i > 10:
-                #print('not valid')
-                self.i = 0
+            print("Running")
 
 
 
