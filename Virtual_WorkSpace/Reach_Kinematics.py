@@ -5,7 +5,7 @@ from scipy import linalg
 from spatialmath.base import *
 from roboticstoolbox import DHLink, DHRobot, jtraj
 import roboticstoolbox as rtb
-from bplprotocol import BPLProtocol, PacketID
+from bplprotocol import BPLProtocol, PacketID, PacketReader
 import time
 import serial
 import Reach_Sim_GUI as gui
@@ -17,7 +17,8 @@ class Kinematics:
         self.gui = gui
         self.watchdog = watchdog
         self.estop = estop
-        self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        self.ra5_base_id = 0x05
         self.ModelRobot()
         
     def ModelRobot(self): #This function sets up the virtual robot. use plot function of ReachAlpha5 to be able to simulate arm movement for testing or use ReachAlpha5.teach() to be able to see how the robot moves
@@ -30,6 +31,7 @@ class Kinematics:
         self.ReachAlpha5 = DHRobot([Link0 , Link1, Link2, Link3, Link4])
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
         self.Origin = self.ReachAlpha5.q 
+        
 
 
     def twothreadsrunning(self): #Thread Example
@@ -59,19 +61,6 @@ class Kinematics:
                 coordinates = self.gui.placecoordinates
                 self.CalculateandMove(coordinates=coordinates)
                 self.gui.delete_coordinates()
-    
-    def Move(self,q):
-        for self.q in q:
-            self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
-            #self.ReachAlpha5.q = self.q
-            #self.fig.step(0.05)
-            #print(self.q)
-                    
-            packets = b''
-            for index, position in enumerate(self.desired_position):
-                device_id = index + 1
-                packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                self.serial_port.write(packets)
 
     def CalculateandMove(self,coordinates):
         self.steps = 50
@@ -93,20 +82,71 @@ class Kinematics:
                 #self.fig = plt.figure(1)
                 #self.fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=self.fig)
                 #self.ax = plt.gca()
-                #self.Move(q=self.trajectory)
-                    
+                self.Move(q=self.trajectory) 
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(5)
+                time.sleep(8)
+                #if self.Verify() >= self.ReachAlpha5.fkine(self.ReachAlpha5.q).t-0.005 and self.Verify() <= self.ReachAlpha5.fkine(self.ReachAlpha5.q).t+0.005:
+                    #print("valid")
                 self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
                 self.Move(q=self.trajectoryback)
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(5)
+                time.sleep(8)
                 
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 
-                
+    def Move(self,q):
+        for self.q in q:
+            self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
+            self.ReachAlpha5.q = self.q
+            #self.fig.step(0.05)
+            #print(self.q)
+                    
+            packets = b''
+            for index, position in enumerate(self.desired_position):
+                device_id = index + 1
+                packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                self.serial_port.write(packets)
 
+    def Verify(self):
+        packet_reader = PacketReader()
+        self.serial_port.write(BPLProtocol.encode_packet(self.ra5_base_id, PacketID.REQUEST, bytes([PacketID.KM_END_POS, PacketID.VOLTAGE, PacketID.TEMPERATURE])))
+        start_time = time.time()
+        position = []
+        voltage = None
+        temp = None
+        d = dict()
+        while True:
+            time.sleep(0.0001)
+            try:
+                read_data = self.serial_port.read()
+            except BaseException:
+                read_data = b''
+            if read_data != b'':
+                packets = packet_reader.receive_bytes(read_data)
+                if packets:
+                    for packet in packets:
+                        read_device_id, read_packet_id, data_bytes = packet
+                        if read_device_id == self.ra5_base_id and read_packet_id in [PacketID.KM_END_POS, PacketID.VOLTAGE, PacketID.TEMPERATURE]:
+                            if read_packet_id == PacketID.KM_END_POS:
+                                position = np.array(BPLProtocol.decode_floats(data_bytes)[:3])
+                            elif read_packet_id == PacketID.VOLTAGE:
+                                voltage = BPLProtocol.decode_floats(data_bytes)
+                            elif read_packet_id == PacketID.TEMPERATURE:
+                                temp = BPLProtocol.decode_floats(data_bytes)
+
+
+                    if position is not None and voltage is not None and temp is not None:
+                        break
+
+            # Timeout if no response is seen from the device.
+            if time.time() - start_time > self.request_timeout:
+                print("Request for Position and Velocity Timed out")
+                break
+
+        if position is not None and voltage is not None and temp is not None: 
+            return position
+        
 if __name__ == '__main__':
     Gui = gui.Reach_Sim_GUI_Class()
     Coordinates = [[-0.019, -0.138, 0.213]]
