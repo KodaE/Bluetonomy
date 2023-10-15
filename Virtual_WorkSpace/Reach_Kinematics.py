@@ -17,7 +17,7 @@ class Kinematics:
         self.gui = gui
         self.watchdog = watchdog
         self.estop = estop
-        #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.ModelRobot()
         
     def ModelRobot(self): #This function sets up the virtual robot. use plot function of ReachAlpha5 to be able to simulate arm movement for testing or use ReachAlpha5.teach() to be able to see how the robot moves
@@ -57,7 +57,6 @@ class Kinematics:
         while run:
             if self.gui.flag:
                 coordinates = self.gui.placecoordinates
-                print(coordinates)
                 self.CalculateandMove(coordinates=coordinates)
                 self.gui.delete_coordinates()
     
@@ -68,11 +67,11 @@ class Kinematics:
             #self.fig.step(0.05)
             #print(self.q)
                     
-            #packets = b''
-            #for index, position in enumerate(self.desired_position):
-                #device_id = index + 1
-                #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                #self.serial_port.write(packets)
+            packets = b''
+            for index, position in enumerate(self.desired_position):
+                device_id = index + 1
+                packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                self.serial_port.write(packets)
 
     def CalculateandMove(self,coordinates):
         self.steps = 50
