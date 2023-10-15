@@ -1,17 +1,19 @@
-from Reach_Kinematics import *
+from Reach_Kinematics import Kinematics
 import random
 import time
 import threading
 import queue
+from Reach_Sim_GUI import Reach_Sim_GUI_Class
 
 
-Kin = Kinematics(COMPORT='COM4')
-
+Gui = Reach_Sim_GUI_Class()
+Kin = Kinematics(COMPORT='COM4',gui=Gui)
+GuiThread = threading.Thread(target=Gui.gui_run)
 MovingRobotThread = threading.Thread(target=Kin.Run)
-runningtime = threading.Thread(target=Kin.twothreadsrunning)
+
 
 MovingRobotThread.start()
-runningtime.start()
+GuiThread.start()
 
 
 

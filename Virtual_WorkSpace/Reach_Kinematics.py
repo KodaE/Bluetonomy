@@ -11,8 +11,9 @@ import serial
 
 class Kinematics:
 
-    def __init__(self, COMPORT):
+    def __init__(self, COMPORT, gui):
         self.comport = COMPORT
+        self.gui = gui
         #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.ModelRobot()
         
@@ -28,6 +29,7 @@ class Kinematics:
         self.Origin = self.ReachAlpha5.q 
         print(self.ReachAlpha5.fkine(self.Origin))
 
+
     def twothreadsrunning(self):
         statement = True
         while statement:
@@ -38,11 +40,9 @@ class Kinematics:
     def InputCoordinates(self):
         coordinates = []
         num_points = int(input("Enter the number of Co-ordinates: "))
-
+        
         for i in range(num_points):
             x = float(input(f"Enter the x-coordinate for point {i + 1}: "))
-            print(x)
-            
             y = float(input(f"Enter the y-coordinate for point {i + 1}: "))
             z = float(input(f"Enter the z-coordinate for point {i + 1}: "))
             coordinates.append([x, y, z])
@@ -51,16 +51,17 @@ class Kinematics:
         return coordinates
     
     def Run(self):
-        flag = True
-        while flag:
-            coordinates = self.InputCoordinates()
-            self.CalculateandMove(coordinates=coordinates)
-
+        run = True
+        while run:
+            if self.gui.flag:
+                coordinates = self.gui.coordinates
+                self.CalculateandMove(coordinates=coordinates)
+                self.gui.delete_coordinates()
     
     def CalculateandMove(self,coordinates):
         self.steps = 50
         self.coordinates = np.array(coordinates)
-
+        
         for self.index in range(len(self.coordinates)):
             self.x = self.coordinates[self.index,0]
             self.y = self.coordinates[self.index,1]
