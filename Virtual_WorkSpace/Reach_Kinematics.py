@@ -8,16 +8,19 @@ import roboticstoolbox as rtb
 from bplprotocol import BPLProtocol, PacketID
 import time
 import serial
+import Reach_Sim_GUI as gui
 
 class Kinematics:
 
-    def __init__(self, COMPORT, gui):
+    def __init__(self, COMPORT, gui, estop, watchdog):
         self.comport = COMPORT
         self.gui = gui
-        #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        self.watchdog = watchdog
+        self.estop = estop
+        self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.ModelRobot()
         
-    def ModelRobot(self):
+    def ModelRobot(self): #This function sets up the virtual robot. use plot function of ReachAlpha5 to be able to simulate arm movement for testing or use ReachAlpha5.teach() to be able to see how the robot moves
         self.ThetaA = atan(145.3/40)
         Link0 = DHLink(d= 0.0462, a= 0.020, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
         Link1 = DHLink(d= 0, a= 0.15071, alpha= pi, qlim= [radians(90),radians(200)],offset=-self.ThetaA) 
@@ -27,17 +30,16 @@ class Kinematics:
         self.ReachAlpha5 = DHRobot([Link0 , Link1, Link2, Link3, Link4])
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
         self.Origin = self.ReachAlpha5.q 
-        print(self.ReachAlpha5.fkine(self.Origin))
 
 
-    def twothreadsrunning(self):
+    def twothreadsrunning(self): #Thread Example
         statement = True
         while statement:
             stime = time.time()
             print(stime)
             time.sleep(5)
 
-    def InputCoordinates(self):
+    def InputCoordinates(self): #For testing purposes
         coordinates = []
         num_points = int(input("Enter the number of Co-ordinates: "))
         
@@ -54,10 +56,24 @@ class Kinematics:
         run = True
         while run:
             if self.gui.flag:
-                coordinates = self.gui.coordinates
+                coordinates = self.gui.placecoordinates
+                print(coordinates)
                 self.CalculateandMove(coordinates=coordinates)
                 self.gui.delete_coordinates()
     
+    def Move(self,q):
+        for self.q in q:
+            self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
+            #self.ReachAlpha5.q = self.q
+            #self.fig.step(0.05)
+            #print(self.q)
+                    
+            packets = b''
+            for index, position in enumerate(self.desired_position):
+                device_id = index + 1
+                packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                self.serial_port.write(packets)
+
     def CalculateandMove(self,coordinates):
         self.steps = 50
         self.coordinates = np.array(coordinates)
@@ -75,37 +91,17 @@ class Kinematics:
                 T1 = transl(self.coordinates[self.index])
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
-                #fig = plt.figure(1)
-                #fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=fig)
-                #ax = plt.gca()
-                for self.q in self.trajectory:
-                    self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
-                    self.ReachAlpha5.q = self.q
-                    #fig.step(0.05)
-                    print(self.q)
-                    
-                    #packets = b''
-                    #for index, position in enumerate(self.desired_position):
-                        #device_id = index + 1
-                        #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                        #self.serial_port.write(packets)
+                #self.fig = plt.figure(1)
+                #self.fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=self.fig)
+                #self.ax = plt.gca()
+                #self.Move(q=self.trajectory)
                     
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(3)
+                time.sleep(5)
                 self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
-                for self.q in self.trajectoryback:
-                    self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
-                    self.ReachAlpha5.q = self.q
-                    #fig.step(0.05)
-                    
-                    #packets = b''
-                    #for index, position in enumerate(self.desired_position):
-                        #device_id = index + 1
-                        #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                        #self.serial_port.write(packets)
-                    
+                self.Move(q=self.trajectoryback)
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(3)
+                time.sleep(5)
                 
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
@@ -113,9 +109,9 @@ class Kinematics:
                 
 
 if __name__ == '__main__':
-    
+    Gui = gui.Reach_Sim_GUI_Class()
     Coordinates = [[-0.019, -0.138, 0.213]]
-    Kin = Kinematics(COMPORT='COM4')
+    Kin = Kinematics(COMPORT='COM4',gui=Gui)
     Kin.CalculateandMove(coordinates=Coordinates)
     
 

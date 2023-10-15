@@ -4,7 +4,8 @@ from Reach_Estop import Reach_Estop_Class as re
 
 class Reach_Int_Class:
     def __init__(self) -> None:
-        pass
+        self.x = 0
+        self.flag = False
 
 # Runs code if Reach_Interface.py is run directly
 if __name__ == "__main__":

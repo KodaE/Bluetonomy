@@ -1,12 +1,12 @@
-
+import Reach_Interface as ri
 
 class Test2:
-    def __init__(self,t1) -> None:
-        self.t1 = t1
+    def __init__(self) -> None:
+        
         pass
 
     def output_x(self):
         while True:
-            if self.t1.flag:
-                print(self.t1.x)
-                self.t1.flag = False
+            if ri.Reach_Int_Class().flag:
+                print(ri.Reach_Int_Class().x)
+                ri.Reach_Int_Class().flag = False

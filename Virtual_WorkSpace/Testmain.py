@@ -3,7 +3,7 @@ from Test2 import Test2
 import threading
 
 t1 = Test1()
-t2 = Test2(t1)
+t2 = Test2()
 
 test1thread = threading.Thread(target=t1.input_x)
 test2thread = threading.Thread(target=t2.output_x)

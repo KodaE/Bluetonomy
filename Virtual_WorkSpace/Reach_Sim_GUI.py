@@ -66,11 +66,12 @@ class Reach_Sim_GUI_Class:
             self.x_entry.delete(0, tk.END)
             self.y_entry.delete(0, tk.END)
             self.z_entry.delete(0, tk.END)
+        
 
     def submit_coordinates(self):
-        for coordinate in self.coordinates:
-            self.placecoordinates = coordinate
+        self.placecoordinates = self.coordinates
         self.flag = True
+        
         
 
     def delete_coordinates(self):
@@ -82,4 +83,5 @@ class Reach_Sim_GUI_Class:
 if __name__ == "__main__":
     
     app = Reach_Sim_GUI_Class()
+    app.gui_run()
     
