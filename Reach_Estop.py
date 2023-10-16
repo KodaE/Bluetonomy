@@ -4,14 +4,22 @@ import threading
 
 class Reach_Estop_Class:
     def __init__(self) -> None:
-        self.time = time.time()
+        self.event = threading.Event()
         self.flag = False
         
     
 
     def run(self): 
         while True:
-            self.time = time.time()
+            self.checktemp()
+            self.checktorque()
+
+    def pulse(self):
+        while True:
+            self.event.set()
+            self.event.clear()
+            time.sleep(10)
+            
             
         
 

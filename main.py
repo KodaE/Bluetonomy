@@ -1,60 +1,22 @@
 from Reach_Kinematics import Kinematics
 import random
-import time 
-import keyboard
+import time
 import threading
-
-HOME = [0.0, 0.0, 0.0, 1.5207, 0.0]
-
-RA_km = Kinematics(COMPORT="COM6")
-# RA_km.move_arm_to_pos(HOME)
-
-timeout = time.time() + 5
+import queue
+from Reach_Sim_GUI import Reach_Sim_GUI_Class
+from Reach_WatchDog import Reach_WatchDog_Class
+from Reach_Estop import Reach_Estop_Class
 
 
-e_stop_event = threading.Event()
-
-
-def generate_valid_coord():
-    x = random.uniform(0, 0.3)
-    y = random.uniform(0, 0.3)
-    z = random.uniform(0, 0.3)
-    co = [[x,y,z]]
-    return co
-
-def run_function():
-    while not e_stop_event.is_set():
-        co = generate_valid_coord()
-        print(RA_km.stop_flag)
-        RA_km.CalculateandMove(coordinates=co)
-        print("\n")
-
-
-def e_stop():
-    while True:
-        print("e-stop running")
-        if keyboard.is_pressed("a"):
-            RA_km.send_disable_comms()
-            RA_km.stop_arm_movement()
-            e_stop_event.set()
-            RA_km.stop_flag = True
-            break
-
-
-t1 = threading.Thread(target=e_stop)
-t2 = threading.Thread(target=run_function)
-
-t1.start()
-t2.start()
-t1.join()
-t2.join()
-
-
-
-
-
-
-
-
-
-
+Estop = Reach_Estop_Class()
+WatchDog = Reach_WatchDog_Class(Estop=Estop)
+Gui = Reach_Sim_GUI_Class()
+Kin = Kinematics(COMPORT='COM4',gui=Gui,estop=Estop ,watchdog=WatchDog)
+GuiThread = threading.Thread(target=Gui.gui_run)
+MovingRobotThread = threading.Thread(target=Kin.Run)
+EstoppulseThread = threading.Thread(target=Estop.pulse)
+WatchDogThread = threading.Thread(target=WatchDog.run)
+MovingRobotThread.start()
+GuiThread.start()
+EstoppulseThread.start()
+WatchDogThread.start()
