@@ -17,7 +17,7 @@ class Kinematics:
         self.gui = gui
         self.watchdog = watchdog
         self.estop = estop
-        #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.ra5_base_id = 0x05
         self.ModelRobot()
         
@@ -100,7 +100,7 @@ class Kinematics:
             self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
             self.ReachAlpha5.q = self.q
             #self.fig.step(0.05)
-            #print(self.q)
+            print(self.q)
                     
             packets = b''
             for index, position in enumerate(self.desired_position):

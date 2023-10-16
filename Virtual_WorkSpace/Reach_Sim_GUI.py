@@ -11,7 +11,7 @@ class Reach_Sim_GUI_Class:
         self.coordinates = []
         
         
-    def gui_run(self):
+    def run(self):
         self.root = tk.Tk()
         self.root.title("Reach Simulation GUI")
         self.root.geometry("400x400")
@@ -23,7 +23,7 @@ class Reach_Sim_GUI_Class:
         x_label = ttk.Label(self.root, text="X (in meters):")
         y_label = ttk.Label(self.root, text="Y (in meters):")
         z_label = ttk.Label(self.root, text="Z (in meters):")
-        range_label = ttk.Label(self.root,text="Range 0.4 meters")
+        #range_label = ttk.Label(self.root,text="Range 0.4 meters")
         # Create entry fields for coordinates
         self.x_entry = ttk.Entry(self.root)
         self.y_entry = ttk.Entry(self.root)
@@ -42,7 +42,7 @@ class Reach_Sim_GUI_Class:
         submit_button = ttk.Button(self.root, text="Submit", command=self.submit_coordinates)
 
         # Place widgets in the GUI
-        range_label.pack()
+        #range_label.pack()
         x_label.pack()
         self.x_entry.pack()
         y_label.pack()
@@ -59,14 +59,14 @@ class Reach_Sim_GUI_Class:
         x = self.x_entry.get()
         y = self.y_entry.get()
         z = self.z_entry.get()
-
-        if x.isdigit() and y.isdigit() and z.isdigit():
+        
+        try:
             self.coordinates.append([float(x), float(y), float(z)])
             self.coordinates_listbox.insert(tk.END, f"({x}, {y}, {z})")
             self.x_entry.delete(0, tk.END)
             self.y_entry.delete(0, tk.END)
             self.z_entry.delete(0, tk.END)
-        else:
+        except ValueError:
             messagebox.showinfo("INVALID COORDINATES!","Please re-enter coordinates")
             self.x_entry.delete(0, tk.END)
             self.y_entry.delete(0, tk.END)
