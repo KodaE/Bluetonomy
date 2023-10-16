@@ -20,12 +20,11 @@ import serial
 
 class Kinematics:
 
-    def __init__(self, Coordinates, COMPORT):
+    def __init__(self, COMPORT):
         self.comport = COMPORT
         self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
-        self.coordinates = np.array(Coordinates)
         self.ModelRobot()
-        self.CalculateandMove()
+        
         
         
 
@@ -39,11 +38,12 @@ class Kinematics:
         self.ReachAlpha5 = DHRobot([Link0 , Link1, Link2, Link3, Link4])
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
         self.Origin = self.ReachAlpha5.q 
-        self.ReachAlpha5.teach(self.ReachAlpha5.q)
         print(self.ReachAlpha5.fkine(self.Origin))
     
-    def CalculateandMove(self):
-        self.steps = 100
+    def CalculateandMove(self,coordinates):
+        self.steps = 50
+        self.coordinates = np.array(coordinates)
+
         for self.index in range(len(self.coordinates)):
             self.x = self.coordinates[self.index,0]
             self.y = self.coordinates[self.index,1]
@@ -56,13 +56,13 @@ class Kinematics:
                 T1 = transl(self.coordinates[self.index])
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
-                fig = plt.figure(1)
-                fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=fig)
-                ax = plt.gca()
+                #fig = plt.figure(1)
+                #fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=fig)
+                #ax = plt.gca()
                 for self.q in self.trajectory:
                     self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
                     self.ReachAlpha5.q = self.q
-                    fig.step(0.05)
+                    #fig.step(0.05)
                     print(self.q)
                     
                     packets = b''
@@ -70,27 +70,28 @@ class Kinematics:
                         device_id = index + 1
                         packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
                         self.serial_port.write(packets)
-                    time.sleep(0.05)
+                    
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-
+                time.sleep(3)
                 self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
                 for self.q in self.trajectoryback:
                     self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
                     self.ReachAlpha5.q = self.q
-                    fig.step(0.05)
+                    #fig.step(0.05)
                     
                     packets = b''
                     for index, position in enumerate(self.desired_position):
                         device_id = index + 1
                         packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
                         self.serial_port.write(packets)
-                    time.sleep(0.01)
+                    
                 print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                time.sleep(3)
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 continue
 
 if __name__ == '__main__':
     
-    Coordinates = [[0.0,0.0,0.0],[0.0,0.5,0.4],[-0.019, -0.138, 0.213]]
+    Coordinates = [-0.019, -0.138, 0.213]
     Kinematics(Coordinates=Coordinates, COMPORT='COM4')
