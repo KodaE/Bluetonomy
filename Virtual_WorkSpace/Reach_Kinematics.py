@@ -9,7 +9,8 @@ from bplprotocol import BPLProtocol, PacketID, PacketReader
 import time
 import serial
 import Reach_Sim_GUI as gui
-
+import Reach_Estop as estop
+import Reach_WatchDog as watchdog
 class Kinematics:
 
     def __init__(self, COMPORT, gui, estop, watchdog):
@@ -17,7 +18,7 @@ class Kinematics:
         self.gui = gui
         self.watchdog = watchdog
         self.estop = estop
-        self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
+        #self.serial_port = serial.Serial(self.comport, baudrate=115200, parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE, timeout=0)
         self.ra5_base_id = 0x05
         self.ModelRobot()
         
@@ -30,7 +31,8 @@ class Kinematics:
         Link4 = DHLink(d= 0, a= 0, alpha= 0, qlim= [radians(0), radians(90)],offset=-pi/2) # Grabber
         self.ReachAlpha5 = DHRobot([Link0 , Link1, Link2, Link3, Link4])
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
-        self.Origin = self.ReachAlpha5.q 
+        self.Origin = self.ReachAlpha5.q
+        
         
 
 
@@ -67,6 +69,10 @@ class Kinematics:
         self.coordinates = np.array(coordinates)
         
         for self.index in range(len(self.coordinates)):
+            #self.gui.changeflag = True
+            #while self.gui.changeflag:
+                #self.coordinates[self.index] = self.gui.coordinates[self.index]
+
             self.x = self.coordinates[self.index,0]
             self.y = self.coordinates[self.index,1]
             self.z = self.coordinates[self.index,2]
@@ -75,9 +81,8 @@ class Kinematics:
             self.inner_lower_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0] + 0.1453,2) >= pow(-self.ReachAlpha5.d[3],2)
             if self.outer_limits and self.inner_limits and self.inner_lower_limits :
                 print('Reachable Position: ', self.coordinates[self.index])
-                self.flag = True
                 T1 = transl(self.coordinates[self.index])
-                self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
+                self.qdestination = self.ReachAlpha5.ikine_LM(Tep=T1,q0=self.ReachAlpha5.q,mask=[1,1,1,0,0,0]).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
                 #self.fig = plt.figure(1)
                 #self.fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=self.fig)
@@ -89,7 +94,8 @@ class Kinematics:
                     #print("valid")
                 self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
                 self.Move(q=self.trajectoryback)
-                print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                #print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                #self.fig.close()
                 time.sleep(8)
                 
             else:
@@ -97,16 +103,16 @@ class Kinematics:
                 
     def Move(self,q):
         for self.q in q:
-            self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
+            self.desired_position = [0.0 , self.q[3] , self.q[2], self.q[1] , self.q[0]]
             self.ReachAlpha5.q = self.q
             #self.fig.step(0.05)
-            print(self.q)
+            #print(self.q)
                     
-            packets = b''
-            for index, position in enumerate(self.desired_position):
-                device_id = index + 1
-                packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                self.serial_port.write(packets)
+            #packets = b''
+            #for index, position in enumerate(self.desired_position):
+                #device_id = index + 1
+                #packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                #self.serial_port.write(packets)
 
     def Verify(self):
         packet_reader = PacketReader()
@@ -149,8 +155,11 @@ class Kinematics:
         
 if __name__ == '__main__':
     Gui = gui.Reach_Sim_GUI_Class()
+    Estop = estop.Reach_Estop_Class()
+    WatchDog = watchdog.Reach_WatchDog_Class(Estop=estop) 
+    
     Coordinates = [[-0.019, -0.138, 0.213]]
-    Kin = Kinematics(COMPORT='COM4',gui=Gui)
-    Kin.CalculateandMove(coordinates=Coordinates)
+    Kin = Kinematics(COMPORT='COM4',gui=Gui, watchdog=WatchDog, estop=Estop)
+    
     
 
