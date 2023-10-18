@@ -34,10 +34,10 @@ class Kinematics:
 
     def ModelRobot(self):
         self.ThetaA = atan(145.3/40)
-        Link0 = DHLink(d= 0.0462, a= 0.020, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
-        Link1 = DHLink(d= 0, a= 0.15071, alpha= pi, qlim= [1.5707,radians(200)],offset=-self.ThetaA) 
-        Link2 = DHLink(d= 0, a= 0.020, alpha= -pi/2, qlim= [radians(0),radians(200)],offset=-self.ThetaA)
-        Link3 = DHLink(d= -0.180, a= 0, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi/2)
+        Link0 = DHLink(d= 4.62, a= 20, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
+        Link1 = DHLink(d= 0, a= 150.71, alpha= pi, qlim= [1.5707,radians(290)],offset=-self.ThetaA) 
+        Link2 = DHLink(d= 0, a= 20, alpha= -pi/2, qlim= [radians(0),radians(200)],offset=-self.ThetaA)
+        Link3 = DHLink(d= -180, a= 0, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi/2)
         Link4 = DHLink(d= 0, a= 0, alpha= 0, qlim= [radians(0), radians(90)],offset=-pi/2) # Grabber
         self.ReachAlpha5 = DHRobot([Link0 , Link1, Link2, Link3, Link4])
         self.ReachAlpha5.q = [0, 1.5707, 0 , 0 , 0]
@@ -52,19 +52,21 @@ class Kinematics:
             self.x = self.coordinates[self.index,0]
             self.y = self.coordinates[self.index,1]
             self.z = self.coordinates[self.index,2]
+
             self.outer_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0],2) <= pow(self.ReachAlpha5.a[1]  + sqrt(pow(self.ReachAlpha5.d[3],2)+pow(self.ReachAlpha5.a[2],2)),2)
-            self.inner_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0],2) >= (pow(0.03994 + self.ReachAlpha5.a[2],2) + pow(0.1453 + self.ReachAlpha5.d[3],2))
-            self.inner_lower_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0] + 0.1453,2) >= pow(-self.ReachAlpha5.d[3],2)
+            self.inner_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0],2) >= (pow(39.94 + self.ReachAlpha5.a[2],2) + pow(145.3 + self.ReachAlpha5.d[3],2))
+            self.inner_lower_limits = pow(sqrt(pow(self.x,2)+pow(self.y,2)) - self.ReachAlpha5.a[0],2) + pow(self.z - self.ReachAlpha5.d[0] +145.3,2) >= pow(-self.ReachAlpha5.d[3],2)
             if self.outer_limits and self.inner_limits and self.inner_lower_limits :
                 print('Reachable Position: ', self.coordinates[self.index])
                 T1 = transl(self.coordinates[self.index])
-                self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q).q
+                print(f"T1 = {T1}")
+                self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q,mask=[1,1,1,0,0,0]).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
                 #fig = plt.figure(1)
                 #fig = self.ReachAlpha5.plot(self.ReachAlpha5.q,fig=fig)
                 #ax = plt.gca()
                 for self.q in self.trajectory:
-                    self.desired_position = [degrees(self.q[4]) , self.q[3] , self.q[2], self.q[1] , self.q[0]]
+                    self.desired_position = [0 , self.q[3] , self.q[2], self.q[1] , self.q[0]]
                     self.ReachAlpha5.q = self.q
                     #fig.step(0.05)
                     # print(self.q)
@@ -76,7 +78,7 @@ class Kinematics:
                         self.serial_port.write(packets)
 
                 time.sleep(2)
-                self.mode_status()
+             
             
                 # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
                 time.sleep(2)
@@ -152,6 +154,7 @@ class Kinematics:
             d["end-effector-pos"] = position
             d["voltage"] = voltage
             d["temp"] = temp
+            print(f"The base_id_feedback data: {d}")
             return d
         
     
@@ -188,14 +191,55 @@ class Kinematics:
                 if time.time() - start_time > request_timeout:
                     print("Request for Position timed out")
                     break
-                
-        return d           
+        print(f"Joint Angles - {d}")       
+        return d   
+    
+    def torque_sensor(self):
+        request_timeout = 1
+        d = dict()
+          
+        for device_id in self.device_id:
+          
+            position = None
+            packet_reader = PacketReader()  
+            self.serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.ATI_FT_READING]))) 
+            start_time = time.time()
+            while True:
+                time.sleep(0.0001)
+                try:
+                    read_data = self.serial_port.read()
+                except BaseException:
+                    read_data = b''
+                if read_data != b'':
+                    packets = packet_reader.receive_bytes(read_data)
+                    if packets:
+                        for packet in packets:
+                            read_device_id, read_packet_id, data_bytes = packet
+                            if read_device_id == device_id and read_packet_id == PacketID.ATI_FT_READING:
+                                # Decode floats, because position is reported in floats
+                                position = BPLProtocol.decode_floats(data_bytes)
+                                d[device_id] = position
+                                                          
+                        if position is not None:
+                            break
+
+                # Timeout if no response is seen from the device.
+                if time.time() - start_time > request_timeout:
+                    print("Request for Position timed out")
+                    break
+        print(f"Joint Torque - {d}")       
+        return d            
 
 
 
     def send_disable_comms(self):
         for device_id in self.device_id:
-            self.packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([0x01]))
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.MODE, BPLProtocol.encode_floats([0x01]))
+        self.serial_port.write(self.packets)
+
+    def send_standby_comms(self):
+        for device_id in self.device_id:
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.MODE, BPLProtocol.encode_floats([0x00]))
         self.serial_port.write(self.packets)
 
     def stop_arm_movement(self):
