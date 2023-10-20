@@ -3,58 +3,72 @@ import random
 import time 
 import keyboard
 import threading
+import time
 
+
+
+#----------------------------------------------- Setting Up Constant ------------------------------------------#
 HOME = [0.0, 0.0, 0.0, 1.5207, 0.0]
-
 RA_km = Kinematics(COMPORT="COM6")
-# RA_km.move_arm_to_pos(HOME)
-
-timeout = time.time() + 5
-
-
-e_stop_event = threading.Event()
+coord = [[100, 100, 100]]
+program_is_on = True
+coordinates = []
 
 
-def generate_valid_coord():
-    x = random.uniform(0, 0.3)
-    y = random.uniform(0, 0.3)
-    z = random.uniform(0, 0.3)
-    co = [[x,y,z]]
-    return co
+while program_is_on: 
+        
+        user_action = input("Please select following button to perform action. Press a to coordinates, b to submit coordinate and c to terminate program: ")
+        
+        if user_action == "a":
+                try:
+                        x_coordinate = float(input("Please enter x - coordinate: "))
+                        y_coordinate = float(input("Please enter y - coordinate: "))
+                        z_coordinate = float(input("Please enter z - coordinate: "))
+                        co = x_coordinate, y_coordinate, z_coordinate
+                        coordinates.append(co)
+                        print(coordinates)
+                except ValueError:
+                        print("Please enter an accurate coordinate")
+        
+        if user_action == "b":
+                print(f"Reach Alpha 5 will move to the following coordinate: {coordinates}")
+                for index, coordinate in enumerate(coordinates):
+                    print(f"Currently moving to: {coordinate}")
+                    reachable = RA_km.CalculateandMove([coordinate])
+                    # coordinates.pop(index)
 
-def run_function():
-    while not e_stop_event.is_set():
-        co = generate_valid_coord()
-        print(RA_km.stop_flag)
-        RA_km.CalculateandMove(coordinates=co)
-        print("\n")
+                    while reachable is False:
+                        replacement_cood= []
 
+                        user_action = input("Coordinate is unreachable, press a to change or b to skip to another coordinate: ")
+                        if user_action == "a":
+                            try:
+                                x_coor = float(input("Please enter x - coordinate: "))
+                                y_coor = float(input("Please enter y - coordinate: "))
+                                z_coor = float(input("Please enter z - coordinate: "))
+                                coord_ = [x_coor, y_coor, z_coor]
+                                replacement_cood.append(coord_)
+                            except ValueError:
+                                print("Please enter an accurate coordinate")
+                            
+                            print(f"Currently moving to {replacement_cood}")
+                            reachable = RA_km.CalculateandMove(replacement_cood)
 
-def e_stop():
-    while True:
-        print("e-stop running")
-        if keyboard.is_pressed("a"):
-            RA_km.send_disable_comms()
-            RA_km.stop_arm_movement()
-            e_stop_event.set()
-            RA_km.stop_flag = True
-            break
-
-
-t1 = threading.Thread(target=e_stop)
-t2 = threading.Thread(target=run_function)
-
-t1.start()
-t2.start()
-t1.join()
-t2.join()
-
-
-
-
-
-
-
-
-
-
+                            if reachable is True:
+                                print("Coordinate was reachable, finishing the rest of the coordinate! ")
+                        elif user_action == "b":
+                              if (index + 1) == (len(coordinates)):
+                                    print("No backlog of coordinates to move, please enter new set of coordinates")
+                              break
+                        
+                coordinates.clear()              
+                   
+        
+        if user_action == "c":
+            program_is_on = False
+                            
+   
+            
+        
+            
+        
