@@ -16,7 +16,8 @@ import roboticstoolbox as rtb
 from bplprotocol import BPLProtocol, PacketID, PacketReader
 import time
 import serial
-import keyboard
+import csv
+import os
 
 class Kinematics:
 
@@ -29,12 +30,13 @@ class Kinematics:
         self.ra5_base_id = 0x05
         self.request_timeout =  2
         self.stop_flag = False
+        self.coordinates = []
         self.ModelRobot()
         
 
     def ModelRobot(self):
         self.ThetaA = atan(145.3/40)
-        Link0 = DHLink(d= 4.62, a= 20, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
+        Link0 = DHLink(d= 46.2, a= 20, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi) # Base Link
         Link1 = DHLink(d= 0, a= 150.71, alpha= pi, qlim= [1.5707,radians(290)],offset=-self.ThetaA) 
         Link2 = DHLink(d= 0, a= 20, alpha= -pi/2, qlim= [radians(0),radians(200)],offset=-self.ThetaA)
         Link3 = DHLink(d= -180, a= 0, alpha= pi/2, qlim= [radians(0),radians(350)],offset=pi/2)
@@ -59,7 +61,7 @@ class Kinematics:
             if self.outer_limits and self.inner_limits and self.inner_lower_limits :
                 print('Reachable Position: ', self.coordinates[self.index])
                 T1 = transl(self.coordinates[self.index])
-                print(f"T1 = {T1}")
+                # print(f"T1 = {T1}")
                 self.qdestination = self.ReachAlpha5.ikine_LM(T1,q0=self.ReachAlpha5.q,mask=[1,1,1,0,0,0]).q
                 self.trajectory = jtraj(self.ReachAlpha5.q, self.qdestination,self.steps).q
                 #fig = plt.figure(1)
@@ -68,7 +70,7 @@ class Kinematics:
                 for self.q in self.trajectory:
                     self.desired_position = [0 , self.q[3] , self.q[2], self.q[1] , self.q[0]]
                     self.ReachAlpha5.q = self.q
-                    #fig.step(0.05)
+                    # fig.step(0.05)
                     # print(self.q)
                     
                     packets = b''
@@ -77,33 +79,32 @@ class Kinematics:
                         packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
                         self.serial_port.write(packets)
 
-                time.sleep(2)
+         
              
             
                 # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                time.sleep(2)
-                if self.stop_flag == False:
-                    self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
-                    for self.q in self.trajectoryback:
-                        self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
-                        self.ReachAlpha5.q = self.q
-                        #fig.step(0.05)
-                        
-                        packets = b''
-                        for index, position in enumerate(self.desired_position):
-                            device_id = index + 1
-                            packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
-                            self.serial_port.write(packets)
-                        
-                    # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
-                    time.sleep(6)
-                    self.reachable = True
-                    return self.reachable
+                time.sleep(8)
+               
+                self.trajectoryback= jtraj(self.ReachAlpha5.q, self.Origin,self.steps).q
+                for self.q in self.trajectoryback:
+                    self.desired_position = [degrees(self.q[4]), self.q[3] , self.q[2] , self.q[1], self.q[0]]
+                    self.ReachAlpha5.q = self.q
+                    # fig.step(0.05)
+                    
+                    packets = b''
+                    for index, position in enumerate(self.desired_position):
+                        device_id = index + 1
+                        packets += BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([position]))
+                        self.serial_port.write(packets)
+                    
+                # print(self.ReachAlpha5.fkine(self.ReachAlpha5.q))
+                # time.sleep(6)
+                self.reachable = True
+                return self.reachable
             else:
                 print('Unreachable Position: ', self.coordinates[self.index])
                 self.reachable = False
                 return self.reachable
-            
    
 
     def move_arm_to_pos(self, desired_positions):
@@ -112,6 +113,7 @@ class Kinematics:
             self.packets += BPLProtocol.encode_packet(self.device_id[n], PacketID.POSITION, BPLProtocol.encode_floats([position]))
             n += 1
         self.serial_port.write(self.packets)
+        
         
 
     def base_id_feedback_data(self):
@@ -147,14 +149,13 @@ class Kinematics:
 
             # Timeout if no response is seen from the device.
             if time.time() - start_time > self.request_timeout:
-                print("Request for Position and Velocity Timed out")
+                print("Request for base ID timed out")
                 break
 
         if position is not None and voltage is not None and temp is not None:
             d["end-effector-pos"] = position
             d["voltage"] = voltage
             d["temp"] = temp
-            print(f"The base_id_feedback data: {d}")
             return d
         
     
@@ -194,67 +195,56 @@ class Kinematics:
         print(f"Joint Angles - {d}")       
         return d   
     
-    def torque_sensor(self):
-        request_timeout = 1
-        d = dict()
-          
-        for device_id in self.device_id:
-          
-            position = None
-            packet_reader = PacketReader()  
-            self.serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.REQUEST, bytes([PacketID.ATI_FT_READING]))) 
-            start_time = time.time()
-            while True:
-                time.sleep(0.0001)
-                try:
-                    read_data = self.serial_port.read()
-                except BaseException:
-                    read_data = b''
-                if read_data != b'':
-                    packets = packet_reader.receive_bytes(read_data)
-                    if packets:
-                        for packet in packets:
-                            read_device_id, read_packet_id, data_bytes = packet
-                            if read_device_id == device_id and read_packet_id == PacketID.ATI_FT_READING:
-                                # Decode floats, because position is reported in floats
-                                position = BPLProtocol.decode_floats(data_bytes)
-                                d[device_id] = position
-                                                          
-                        if position is not None:
-                            break
-
-                # Timeout if no response is seen from the device.
-                if time.time() - start_time > request_timeout:
-                    print("Request for Position timed out")
-                    break
-        print(f"Joint Torque - {d}")       
-        return d            
+    
 
 
 
     def send_disable_comms(self):
         for device_id in self.device_id:
-            self.packets += BPLProtocol.encode_packet(device_id, PacketID.MODE, BPLProtocol.encode_floats([0x01]))
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.MODE, bytes(1))
         self.serial_port.write(self.packets)
 
     def send_standby_comms(self):
         for device_id in self.device_id:
-            self.packets += BPLProtocol.encode_packet(device_id, PacketID.MODE, BPLProtocol.encode_floats([0x00]))
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.MODE, bytes(2))
         self.serial_port.write(self.packets)
+        time.sleep(1)
 
     def stop_arm_movement(self):
         for device_id in self.device_id:
-            self.packets += BPLProtocol.encode_packet(device_id, PacketID.VELOCITY, BPLProtocol.encode_floats([0]))
+            self.packets += BPLProtocol.encode_packet(device_id, PacketID.VELOCITY, BPLProtocol.encode_floats([0.0]))
         self.serial_port.write(self.packets)
+        time.sleep(1)
+
+    # def reset_arm_velocity(self):
+    #     for device_id in self.device_id:
+    #         self.packets += BPLProtocol.encode_packet(device_id, PacketID.VELOCITY, BPLProtocol.encode_floats([1000.0]))
+    #     self.serial_port.write(self.packets)
+    #     time.sleep(1)
+
+    
+    def log_data(self, file_title):
+
+        header = ["Time-Stamp", "Input-Coordinate", "Reachable"]
+        data = None
+        directory = "./datalog"
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
 
-    # def e_stop(self):
-    #     print(keyboard.is_pressed)
-    #     if keyboard.is_pressed("a"):
-    #         self.stop_arm_movement()
-    #         self.send_disable_comms()
-            
+        with open(f"{directory}/{file_title}.csv", mode="a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+    
+            time_stamp = time.strftime("%H_%M_%S", time.localtime(time.time()))
+            coordinate = self.coordinates
+            reachable = self.reachable
+            data = [time_stamp, coordinate, reachable]
+            writer.writerow(data)
+    
 
+        
 if __name__ == '__main__':
     
     Coordinates = [-0.019, -0.138, 0.213]
