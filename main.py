@@ -1,18 +1,20 @@
-from Reach_Kinematics import Kinematics
+# from Reach_Kinematics import Kinematics
+from Reach_Kinematics_Test import Kinematics
 import time 
 import keyboard
 import threading
 import time
+from math import pi, radians
 
 
 
 
 #----------------------------------------------- Setting Up Constant ------------------------------------------#
-HOME = [0.0, 0.0, 0.0, 1.5207, 0.0]
-
+HOME = [0.0, 0.0, 0.0, 1.5207, pi]
+WAY_POINT =  [0.0, 0.0, radians(180),radians(180) , radians(180)]
 DATA_RECORD_FREQUENCY = 5
 
-coord = [[100, 100, 100]]
+
 program_is_on = True
 coordinates = []
 data_log_file_title = time.strftime("%Y-%m-%d_%H_%M_%S", time.localtime(time.time()))
@@ -22,6 +24,7 @@ RA_km = Kinematics(COMPORT="COM6")
 time.sleep(0.001)
 RA_km.send_standby_comms()
 RA_km.move_arm_to_pos(HOME)
+
 
 #-------------------------------------------- Program Title -----------------------------------------------#
 
@@ -59,8 +62,9 @@ def run_main_program():
             
             if user_action == "d":
             
-                 RA_km.send_standby_comms()
-                 RA_km.move_arm_to_pos(HOME)
+                RA_km.send_standby_comms()
+                #  RA_km.move_arm_to_pos(HOME)
+                RA_km.move_arm_to_pos(HOME ) 
             
 
             elif user_action == "a":
@@ -79,7 +83,7 @@ def run_main_program():
                     for index, coordinate in enumerate(coordinates):
                         print(f"Currently moving to: {coordinate}")
                         try:
-                            reachable = RA_km.CalculateandMove([coordinate])
+                            reachable = RA_km.CalculateandMove([coordinate],ikine=False)
                          
                             # coordinates.pop(index)
 
@@ -97,7 +101,7 @@ def run_main_program():
                                     except ValueError:
                                         print("Please enter an accurate coordinate")
                                     print(f"Currently moving to {replacement_cood}")
-                                    reachable = RA_km.CalculateandMove(replacement_cood)
+                                    reachable = RA_km.CalculateandMove(coordinates=replacement_cood,ikine=False)
 
                                     if reachable is True:
                                         print("Coordinate was reachable, finishing the rest of the coordinate! ")
@@ -115,7 +119,6 @@ def run_main_program():
                                     RA_km.move_arm_to_pos(HOME)
 
                                 elif user_action == "b":
-                            
                                     RA_km.send_standby_comms()
                                     
                                 elif user_action == "c":
