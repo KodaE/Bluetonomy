@@ -18,7 +18,7 @@ if __name__ == '__main__':
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(0)
 
-    # To TARE THe sensor send an ATI_FT Packet to Device 0x0D
+    # # To TARE THe sensor send an ATI_FT Packet to Device 0x0D
 
     tare_packet = \
         BPLProtocol.encode_packet(0x0D, PacketID.ATI_FT_READING, BPLProtocol.encode_floats([0., 0., 0., 0., 0., 0.]))
@@ -64,4 +64,5 @@ if __name__ == '__main__':
 
                 if packet_received:
                     break
+            
 

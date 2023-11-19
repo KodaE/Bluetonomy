@@ -8,16 +8,16 @@ import serial
 
 if __name__ == '__main__':
 
-    device_id = 0x03  # Joint B
+    device_id = 4  # Joint B
 
     #serial_port_name = "COM10"
-    serial_port_name = "/dev/ttyUSB0"
+    serial_port_name = "COM6"
 
     serial_port = serial.Serial(serial_port_name, baudrate=115200, parity=serial.PARITY_NONE,
                                 stopbits=serial.STOPBITS_ONE, timeout=0)
 
     # Send to a position of 0.5 radians
-    serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([0.0])))
+    serial_port.write(BPLProtocol.encode_packet(device_id, PacketID.POSITION, BPLProtocol.encode_floats([1.5])))
 
     print("Position changed")
     

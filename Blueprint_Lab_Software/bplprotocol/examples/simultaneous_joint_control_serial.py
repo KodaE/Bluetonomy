@@ -1,12 +1,13 @@
 from bplprotocol import BPLProtocol, PacketID, PacketReader
 
+
 import time
 import serial
 from math import *
 
 if __name__ == '__main__':
 
-    serial_port_name = "COM4"
+    serial_port_name = "COM6"
     #serial_port_name = "/dev/ttyUSB0"
 
     serial_port = serial.Serial(serial_port_name, baudrate=115200, parity=serial.PARITY_NONE,
@@ -18,10 +19,16 @@ if __name__ == '__main__':
     # print(q0)
     print(degrees(pi/2))
     ThetaA = tanh(145.3/40)
-    desired_positions = [0.0, 0.0, 0.0, pi/2 ,0.0]
-
+    # desired_positions = [0.0, 0.0, 0, 0, pi]
+    desired_positions = [0, 0.0, radians(180),radians(180) , radians(180)]
+    # desired_positions = [0, pi *10, pi, pi, pi]
+    # desired_positions = [0, 1, 0, 0, 0]
+    #4.58535765, 1.96881245, 1.41269028, 1.90062291, 0.34648783
+    #[3.92699039 3.51752243 0.66734183 6.25830984 2.38107041]
 
    # desired_positions = [0,0,0,0,0,0,0]
+
+    #current_positions = [0,0,0,0,0]
 
     packets = b''
     for index, position in enumerate(desired_positions):
