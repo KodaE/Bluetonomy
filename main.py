@@ -137,13 +137,13 @@ def e_stop():
     start = time.time()
     voltage = 23
     temp = 40
+
     try:
         time.sleep(5)
         voltage = RA_km.base_id_feedback_data()["voltage"][0]
         temp = RA_km.base_id_feedback_data()["temp"][0]
     except:
-        voltage is None
-        temp is None
+        print("System data not available at the moment, please wait for next pulse")
 
    
     # temp = RA_km.base_id_feedback_data()["temp"]

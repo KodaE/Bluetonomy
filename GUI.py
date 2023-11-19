@@ -1,7 +1,7 @@
 
 from tkinter import *
 from tkinter import messagebox
-from Reach_Kinematics import Kinematics
+from Bluetonomy.Reach_Kinematics_Test import Kinematics
 import time
 import threading
 

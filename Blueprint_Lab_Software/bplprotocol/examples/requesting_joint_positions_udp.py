@@ -58,7 +58,6 @@ if __name__ == '__main__':
             sock.sendto(request_packet, manipulator_address)
 
 
-=======
 """bplprotocol/examples/requesting_joints_positions_udp.py
 Example to request the Joint positions from the arm.
 """
@@ -118,4 +117,4 @@ if __name__ == '__main__':
             sock.sendto(request_packet, manipulator_address)
 
 
->>>>>>> main
+
