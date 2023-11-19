@@ -129,8 +129,8 @@ class Kinematics:
 
                 print(self.ReachAlpha5.q)
                 
-                d = self.base_id_feedback_data()
-                print(f'Real End Effector: {d["end-effector-pos"]}')
+                # d = self.base_id_feedback_data()
+                # print(f'Real End Effector: {d["end-effector-pos"]}')
             
                 print(f"Simulated Coordiantes: {self.ReachAlpha5.fkine(self.ReachAlpha5.q)}")
                 time.sleep(8)
