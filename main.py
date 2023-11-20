@@ -13,6 +13,7 @@ from math import pi, radians
 HOME = [0.0, 0.0, 0.0, 1.5207, pi]
 WAY_POINT =  [0.0, 0.0, radians(180),radians(180) , radians(180)]
 DATA_RECORD_FREQUENCY = 5
+COMPORT_SETUP = "COM6"
 
 
 program_is_on = True
@@ -20,7 +21,7 @@ coordinates = []
 data_log_file_title = time.strftime("%Y-%m-%d_%H_%M_%S", time.localtime(time.time()))
 e_stop_flag = False
 
-RA_km = Kinematics(COMPORT="COM6")
+RA_km = Kinematics(COMPORT=COMPORT_SETUP)
 time.sleep(0.001)
 RA_km.send_standby_comms()
 RA_km.move_arm_to_pos(HOME)
