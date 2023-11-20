@@ -149,7 +149,7 @@ class Kinematics:
 
             # Timeout if no response is seen from the device.
             if time.time() - start_time > self.request_timeout:
-                print("Request for base ID timed out")
+                print("\nRequest for base ID timed out")
                 break
 
         if position is not None and voltage is not None and temp is not None:
