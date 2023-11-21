@@ -198,6 +198,10 @@ class Kinematics:
         theta1 = pi/2 + atan2((z-d0),(R-a0)) - acos((pow(l1,2)+pow(l3,2)-pow(l2,2))/(2*l1*l3)) - asin((2*a2)/l1)
         theta2 = acos((pow(l1,2)-pow(l3,2)+pow(l2,2))/(2*l1*l2)) - asin((2*a2)/l1) - asin(a2/l2)
 
+        q = [theta0, theta1, theta2, 0]
+
+        return q
+
         
 
     def move_arm_to_pos(self, desired_positions): # sends packets to the Reach Alpha 5 to move to joint angles specified.
